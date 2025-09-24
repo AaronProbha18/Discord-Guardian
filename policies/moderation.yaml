@@ -1,0 +1,25 @@
+rules:
+  - name: Severe Toxicity
+    if: toxicity >= 0.90
+    actions:
+      - delete_message
+      - warn_user
+  - name: Borderline Toxicity
+    if: 0.60 <= toxicity < 0.90
+    actions:
+      - ask_llm
+escalation:
+  window_minutes: 60
+  thresholds:
+    # After 2 warns: short timeout; 4 warns: longer timeout; 5 warns: escalate to human mods
+    warns: "2 -> timeout_member(30); 4 -> timeout_member(120); 5 -> escalate(human_mods)"
+    # After 2 timeouts escalate; after 3 timeouts escalate again (higher tier)
+    timeouts:
+      - "2 -> escalate(human_mods)"
+      - "3 -> escalate(security_team)"
+exempt_roles:
+  - admin
+  - mod
+appeals:
+  channel: appeals
+  retention_days: 14

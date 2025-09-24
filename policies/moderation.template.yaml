@@ -1,0 +1,69 @@
+# ----------------------------------------------------
+# Discord Guardian - Policy Configuration
+# ----------------------------------------------------
+# This file defines the rules, actions, and escalations for the moderation bot.
+# The bot loads this configuration on startup.
+
+# --- Rules ---
+# Rules are evaluated in the order they are defined. The first rule that matches
+# a message's content or toxicity score will have its actions executed.
+rules:
+  # Rule for very toxic messages. This rule triggers if the toxicity score is 0.9 or higher.
+  # It immediately deletes the message and sends a warning to the user.
+  - name: "Very High Toxicity"
+    if: "toxicity >= 0.90"
+    actions:
+      - "delete_message"
+      - "warn_user(reason='Your message was removed for severe toxicity.')"
+
+  # Rule for borderline messages. This rule triggers for toxicity scores between 0.6 and 0.9.
+  # It calls the 'ask_llm' action, which sends the message to an LLM to decide the best course of action.
+  - name: "Borderline Toxicity"
+    if: "0.60 <= toxicity < 0.90"
+    actions:
+      - "ask_llm"
+
+  # Example of a regex-based rule for filtering invite links. This is also a conceptual example.
+  # - name: "No Invite Links"
+  #   if: "matches_regex(r'(https?://)?(www\\.)?(discord\\.(gg|io|me|li)|discordapp\\.com/invite)/.+')"
+  #   actions:
+  #     - "delete_message"
+  #     - "warn_user(reason='Please do not post invite links.')"
+
+# --- Escalation System ---
+# This section defines how the bot should automatically escalate punishments for repeat offenders.
+escalation:
+  # The time window (in minutes) for tracking repeat offenses.
+  window_minutes: 60
+
+  # Defines the thresholds for escalating actions.
+  thresholds:
+    # 'warns' tracks the number of 'warn_user' actions a user has received.
+    # - After 2 warnings in 60 minutes, the user is timed out for 30 minutes.
+    # - After 4 warnings, they are timed out for 2 hours (120 minutes).
+    # - After 5 warnings, the incident is escalated to human moderators.
+    warns: "2 -> timeout_member(30); 4 -> timeout_member(120); 5 -> escalate(human_mods)"
+
+    # 'timeouts' tracks the number of 'timeout_member' actions.
+    # - After 2 timeouts in 60 minutes, the incident is escalated to human moderators.
+    # - After 3 timeouts, it is escalated to a higher-tier team (e.g., 'security_team').
+    timeouts:
+      - "2 -> escalate(human_mods)"
+      - "3 -> escalate(security_team)"
+
+# --- Role Exemptions ---
+# A list of roles that are exempt from all moderation actions.
+# Users with these roles will not have their messages scored or acted upon.
+exempt_roles:
+  - "admin"
+  - "mod"
+  - "Bot"
+
+# --- Appeals System ---
+# Configuration for the user appeals system.
+appeals:
+  # The name of the channel where new appeals should be posted for moderator review.
+  channel: "appeals"
+
+  # The number of days to keep decided appeals in the database before purging them.
+  retention_days: 14

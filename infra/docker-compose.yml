@@ -1,0 +1,34 @@
+version: '3.9'
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  bot:
+    build: ../
+    command: ["uv", "run", "-m", "modbot"]
+    env_file: ../.env
+    volumes:
+      - ../:/app
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  mcp_server:
+    build: ../
+    command: ["uv", "run", "python", "src/mcp_server/main.py"]
+    env_file: ../.env
+    ports:
+      - "8001:8000"
+    volumes:
+      - ../:/app
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data: {}
